@@ -43,8 +43,9 @@ object LoadWeight {
                 idx = idx + 1
                 ret}.toArray
         val varX = (0 until x(0)).map{y => 
-                val ret = b2i(bytesw(4*idx),bytesw(4*idx+1),bytesw(4*idx+2),bytesw(4*idx+3)).toDouble / div
+                var ret = b2i(bytesw(4*idx),bytesw(4*idx+1),bytesw(4*idx+2),bytesw(4*idx+3)).toDouble / div
                 idx = idx + 1
+                if(ret == 0) {ret = 100}//to avoid weight or bias be something div zero
                 ret}.toArray
         idx = idx + 1
         val weight = (0 until x(0)).map{y => 

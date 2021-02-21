@@ -1,4 +1,4 @@
-import java.io.{File, FileInputStream}
+import java.io.{File, FileInputStream, PrintWriter}
 import Net._
 
 case class resnet20() extends Net {
@@ -78,6 +78,19 @@ case class resnet20() extends Net {
 }
 
 object GoldenResNet {
+  def saveFM(inp : Array[Array[Array[Double]]], fileName : String) = {
+    val writer = new PrintWriter(new File("saveFM\\"+fileName+".txt" ))
+    for(j <- 0 until inp(0).length) {
+      for(i <- 0 until inp.length) {
+        for(k <- 0 until inp(0)(0).length) {
+          writer.write(inp(i)(j)(k)+",")
+        }
+        writer.write("\n")
+      }
+      writer.write("\n\n")
+    }
+    writer.close()
+  }
   def printFM(inp : Array[Array[Double]]) = {
     for(i <- 0 until inp.length) {
       for(j <- 0 until inp(0).length) {
@@ -97,6 +110,10 @@ object GoldenResNet {
       val convr = Golden.adder2d(inp, inplanes, planes, 1, weight(4), stride = stride, padding = 0)
       residual = Golden.BatchNorm(convr,weight(5))
     }
+    if(inp(0)(0)(0) == 0.02147562182031093) {
+      print("bs1b2")
+      saveFM(bn2,"bs1b2")
+    }
     //printFM(bn1(0))
     val resAdd = bn2.zipWithIndex.map{case (value1,idx1) => value1.zipWithIndex.map{case (value2,idx2) => value2.zipWithIndex.map{case (value3,idx3) => value3 + residual(idx1)(idx2)(idx3)}}}
     val r2 = Golden.relu(resAdd)
@@ -109,6 +126,9 @@ object GoldenResNet {
     }
 
     val bs1 = BasicBlock(inp, inp.length, planes, (0 until 4+downsample*2).map(x => weight(x).map(_.toDouble).toArray).toList, stride = stride, downsample = downsample)
+    if(inp(0)(0)(0) == 0.02147562182031093) {
+      saveFM(bs1,"bs1")
+    }
     val bs2 = BasicBlock(bs1, planes, planes, (4+downsample*2 until 8+downsample*2).map(x => weight(x).map(_.toDouble).toArray).toList)
     val bs3 = BasicBlock(bs2, planes, planes, (8+downsample*2 until 12+downsample*2).map(x => weight(x).map(_.toDouble).toArray).toList)
     bs3
@@ -120,12 +140,15 @@ object GoldenResNet {
 
     var suc = 0
     var div = 1024
-    for(i <- 0 until 100) {
+    for(i <- 0 until 1) {
       var l1 = Golden.conv2d(mat(i),3,16,3,wList(0),1,1)
       var b1 = Golden.BatchNorm(l1,wList(1))
       var r1 = Golden.relu(b1)
 
+      saveFM(r1,"r1")
       var res1 = makeLayer(r1,16,(2 until 14).map(x => wList(x)).toList)
+      saveFM(res1,"res1")
+      //printFM(res1(0))
       val res2 = makeLayer(res1,32,(14 until 28).map(x => wList(x)).toList,stride = 2)
       val res3 = makeLayer(res2,64,(28 until 42).map(x => wList(x)).toList,stride = 2)
       val pool = Golden.AvgPool(res3,8,1)
