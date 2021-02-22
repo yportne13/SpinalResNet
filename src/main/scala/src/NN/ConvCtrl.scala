@@ -18,62 +18,63 @@ class ConvCtrl(
     val valid = out Bool
   }
 
-  val cnt1 = Reg(UInt(2 bits)) init(0)//shift
-  val cntChin = Reg(UInt(log2Up(Chin) bits)) init(0)
-  val cnt2 = Reg(UInt(2 bits)) init(0)
-  val cntC = Reg(UInt(log2Up(ChoutDivHard) bits)) init(0)
-  val cntH = Reg(UInt(log2Up(high) bits)) init(0)
+  //val cnt1 = Reg(UInt(2 bits)) init(0)//shift
+  //val cntChin = Reg(UInt(log2Up(Chin) bits)) init(0)
+  //val cnt2 = Reg(UInt(2 bits)) init(0)
+  //val cntC = Reg(UInt(log2Up(ChoutDivHard) bits)) init(0)
+  //val cntH = Reg(UInt(log2Up(high) bits)) init(0)
+  val List(cnt1,cntChin,cnt2,cntC,cntH) = MultiCnt(io.start,List(3,Chin,3,ChoutDivHard,high))
 
-  val beforeEnd = Reg(Bool)
-  beforeEnd := (cnt1 === 1) && (cntChin === Chin - 1) && (cnt2 === 2) && (cntH === high - 1) && (cntC === ChoutDivHard - 1)
-  val en = Reg(Bool) init(False)
-  when(io.start) {
-    en := True
-  }.elsewhen(beforeEnd) {
-    en := False
-  }
+  //val beforeEnd = Reg(Bool)
+  //beforeEnd := (cnt1 === 1) && (cntChin === Chin - 1) && (cnt2 === 2) && (cntH === high - 1) && (cntC === ChoutDivHard - 1)
+  //val en = Reg(Bool) init(False)
+  //when(io.start) {
+  //  en := True
+  //}.elsewhen(beforeEnd) {
+  //  en := False
+  //}
 
-  when(en) {
-    when(cnt1 < 2) {
-      cnt1 := cnt1 + 1
-    }.otherwise {
-      cnt1 := 0
-    }
-  }
-  if(Chin > 1) {
-    when(cnt1 === 2) {
-      when(cntChin < Chin - 1) {
-        cntChin := cntChin + 1
-      }.otherwise {
-        cntChin := 0
-      }
-    }
-  }
-  when(cnt1 === 2 && cntChin === Chin - 1) {
-    when(cnt2 < 2) {
-      cnt2 := cnt2 + 1
-    }.otherwise {
-      cnt2 := 0
-    }
-  }
-  if(ChoutDivHard > 1) {
-    when(cnt1 === 2 && cntChin === Chin - 1 && cnt2 === 2) {
-      when(cntC < ChoutDivHard - 1) {
-        cntC := cntC + 1
-      }.otherwise {
-        cntC := 0
-      }
-    }
-  }
-  if(high > 1) {
-    when(cnt1 === 2 && cntChin === Chin - 1 && cnt2 === 2 && cntC === ChoutDivHard - 1) {
-      when(cntH < high - 1) {
-        cntH := cntH + 1
-      }.otherwise {
-        cntH := 0
-      }
-    }
-  }
+  //when(en) {
+  //  when(cnt1 < 2) {
+  //    cnt1 := cnt1 + 1
+  //  }.otherwise {
+  //    cnt1 := 0
+  //  }
+  //}
+  //if(Chin > 1) {
+  //  when(cnt1 === 2) {
+  //    when(cntChin < Chin - 1) {
+  //      cntChin := cntChin + 1
+  //    }.otherwise {
+  //      cntChin := 0
+  //    }
+  //  }
+  //}
+  //when(cnt1 === 2 && cntChin === Chin - 1) {
+  //  when(cnt2 < 2) {
+  //    cnt2 := cnt2 + 1
+  //  }.otherwise {
+  //    cnt2 := 0
+  //  }
+  //}
+  //if(ChoutDivHard > 1) {
+  //  when(cnt1 === 2 && cntChin === Chin - 1 && cnt2 === 2) {
+  //    when(cntC < ChoutDivHard - 1) {
+  //      cntC := cntC + 1
+  //    }.otherwise {
+  //      cntC := 0
+  //    }
+  //  }
+  //}
+  //if(high > 1) {
+  //  when(cnt1 === 2 && cntChin === Chin - 1 && cnt2 === 2 && cntC === ChoutDivHard - 1) {
+  //    when(cntH < high - 1) {
+  //      cntH := cntH + 1
+  //    }.otherwise {
+  //      cntH := 0
+  //    }
+  //  }
+  //}
 
   val faddr = Reg(UInt(log2Up((Hin + 2*padding) * Chin) bits)) init(padding*Chin)
   if(high > 1) {

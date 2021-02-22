@@ -19,7 +19,7 @@ object ResNetSim {
         if(idx%delay > 2 && idx%delay <= 2+4*32*3) {
           dut.io.inp.valid #= true
           for(i <- 0 until 8) {
-            dut.io.inp.payload(i) #= (mat(idx/delay)((idx%delay - 3)%12/4)((idx%delay - 3)/12)(i+8*((idx%delay - 3)%4))*128).toInt
+            dut.io.inp.payload(i) #= (mat(idx/delay)((idx%delay - 3)%12/4)((idx%delay - 3)/12)(i+8*((idx%delay - 3)%4))*256).toInt
           }
         }else {
           dut.io.inp.valid #= false

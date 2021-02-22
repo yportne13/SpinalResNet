@@ -5,11 +5,11 @@ import spinal.sim._
 
 class ResNet extends Component {
   val io = new Bundle {
-    val inp = in (Flow(Vec(SInt(11 bits),8)))
+    val inp = in (Flow(Vec(SInt(12 bits),8)))
     val oup = out (Flow(UInt(4 bits)))
   }
 
-  val l1in = Vec(Reg(SFix(3 exp, -7 exp)) init(0),32)
+  val l1in = Vec(Reg(SFix(3 exp, -8 exp)) init(0),32)
   when(io.inp.valid) {
     for(i <- 0 until 8) {
       l1in(i+24).raw := io.inp.payload(i)
@@ -29,7 +29,7 @@ class ResNet extends Component {
     cnt := 0
   }
 
-  val inp = FM(3,7,32,32,3,0,"weight\\resnet20.bin",resnet20().x.weightList) simPublic()
+  val inp = FM(3,8,32,32,3,0,"weight\\resnet20.bin",resnet20().x.weightList) simPublic()
   inp.fm.valid := Delay(cnt === 3,1,init = False)
   inp.fm.payload := l1in
 
