@@ -10,7 +10,7 @@ object conv2d {
     val Hin = inp.H
     val Wout = (Win+2*padding-kernel_size)/stride+1
     val Hout = (Hin+2*padding-kernel_size)/stride+1
-    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true, 0, true)
+    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true, 0, "conv")
     l.io.input := inp.fm
     val oup = FM(Qop,Qor,Wout,Hout,output_channel,inp.Layer+1,inp.WeightFile,inp.WeightConfig)
     oup.fm := l.io.output
@@ -53,7 +53,7 @@ class Conv(
   ChoutDivHard : Int = 1,
   noReLu     : Boolean = false,
   highFreq   : Int = 1,
-  conv       : Boolean = false
+  mode       : String = "adder"
 ) extends Component {
 
   val Wout = (Win + 2 * padding - kernel_size) / stride + 1
@@ -64,7 +64,7 @@ class Conv(
     val output = out (Flow(Vec(SFix(Qop exp, -Qor exp),Wout)))
   } simPublic()
 
-  val lcore = new ConvCore(Chin,Chout,kernel_size,ChoutDivHard,stride,padding,WeightFile,WeightConfig,Win,Hin,Qip,Qir,Qop,Qor,layer,highFreq,conv)
+  val lcore = new ConvCore(Chin,Chout,kernel_size,ChoutDivHard,stride,padding,WeightFile,WeightConfig,Win,Hin,Qip,Qir,Qop,Qor,layer,highFreq,mode)
   lcore.io.valid_in := io.input.valid
   lcore.io.data_in  := io.input.payload
 
@@ -77,7 +77,7 @@ class Conv(
       lOut(i) := lOut(i+1)
     }
   }
-  lcOut.payload := lOut(0)
+  
   val lcOutValid = Reg(Bool) init(False)
   when(lcore.io.valid_out) {
     lcOutValid := True
@@ -85,6 +85,7 @@ class Conv(
     lcOutValid := False
   }
   lcOut.valid   := lcOutValid
+  lcOut.payload := (if(mode != "avgpool") lOut(0) else (Vec(lOut(0).map{x => val ret = cloneOf(x);ret.raw := x.raw / (kernel_size*kernel_size);ret})) )
 
   io.output := lcOut
 

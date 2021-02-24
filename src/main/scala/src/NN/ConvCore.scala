@@ -20,7 +20,7 @@ class ConvCore(
   Qor        : Int,
   layer      : Int,
   highFreq   : Int = 1,
-  conv       : Boolean = false
+  mode       : String = "adder"
 ) extends Component {
 
   val Wout = (Win + 2 * padding - kernel_size) / stride + 1
@@ -94,7 +94,7 @@ class ConvCore(
   val wrom = new Wrom(w, Chout = Chout, ChoutDivHard = ChoutDivHard)
   wrom.io.addr := Delay(ctrl.io.waddr,1)
 
-  val pe = new PE(Wout = Wout, Chout = Chout / ChoutDivHard, Qwp = Qwp, Qwr = Qwr, Qfmp = Qip, Qfmr = Qir, Qop = Qop, Qor = Qor, highFreq = highFreq, conv = conv)
+  val pe = new PE(Wout = Wout, Chout = Chout / ChoutDivHard, Qwp = Qwp, Qwr = Qwr, Qfmp = Qip, Qfmr = Qir, Qop = Qop, Qor = Qor, highFreq = highFreq, mode = mode)
   pe.io.clear := ctrl.io.clear
   for(i <- 0 until Wout) {
     pe.io.FM(i) := peFM(i * stride)
