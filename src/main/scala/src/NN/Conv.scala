@@ -5,12 +5,12 @@ import spinal.core.sim._
 
 object conv2d {
   def apply(inp : FM, input_channel : Int, output_channel : Int, kernel_size : Int, stride : Int = 1, padding : Int = 0, bias: Boolean = false, Qop : Int, Qor : Int, ChoutDivHard : Int): FM = {
-    println("Layer"+inp.Layer+":conv2d("+input_channel+","+output_channel+","+kernel_size+","+stride+","+padding+")")
+    println("Layer"+inp.Layer+":conv2d("+input_channel+","+output_channel+","+kernel_size+","+stride+","+padding+")"+" ("+((inp.W+2*padding-kernel_size)/stride+1)+","+((inp.H+2*padding-kernel_size)/stride+1)+")")
     val Win = inp.W
     val Hin = inp.H
     val Wout = (Win+2*padding-kernel_size)/stride+1
     val Hout = (Hin+2*padding-kernel_size)/stride+1
-    val l = new Conv(input_channel,output_channel,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true, 0, true)
+    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true, 0, true)
     l.io.input := inp.fm
     val oup = FM(Qop,Qor,Wout,Hout,output_channel,inp.Layer+1,inp.WeightFile,inp.WeightConfig)
     oup.fm := l.io.output
@@ -20,12 +20,12 @@ object conv2d {
 
 object adder2d {
   def apply(inp : FM, input_channel : Int, output_channel : Int, kernel_size : Int, stride : Int = 1, padding : Int = 0, bias: Boolean = false, Qop : Int, Qor : Int, ChoutDivHard : Int): FM = {
-    println("Layer"+inp.Layer+":adder2d("+input_channel+","+output_channel+","+kernel_size+","+stride+","+padding+")")
+    println("Layer"+inp.Layer+":adder2d("+input_channel+","+output_channel+","+kernel_size+","+stride+","+padding+")"+" ("+((inp.W+2*padding-kernel_size)/stride+1)+","+((inp.H+2*padding-kernel_size)/stride+1)+")")
     val Win = inp.W
     val Hin = inp.H
     val Wout = (Win+2*padding-kernel_size)/stride+1
     val Hout = (Hin+2*padding-kernel_size)/stride+1
-    val l = new Conv(input_channel,output_channel,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true)
+    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true)
     l.io.input := inp.fm
     val oup = FM(Qop,Qor,Wout,Hout,output_channel,inp.Layer+1,inp.WeightFile,inp.WeightConfig)
     oup.fm := l.io.output
@@ -36,6 +36,7 @@ object adder2d {
 class Conv(
   Chin  : Int,
   Chout : Int,
+  kernel_size : Int,
   stride : Int,
   padding : Int,
   WeightFile : String,
@@ -55,15 +56,15 @@ class Conv(
   conv       : Boolean = false
 ) extends Component {
 
-  val Wout = (Win + 2 * padding - 3) / stride + 1
-  val Hout = (Hin + 2 * padding - 3) / stride + 1
+  val Wout = (Win + 2 * padding - kernel_size) / stride + 1
+  val Hout = (Hin + 2 * padding - kernel_size) / stride + 1
 
   val io = new Bundle {
     val input = in (Flow(Vec(SFix(Qip exp, -Qir exp),Win)))
     val output = out (Flow(Vec(SFix(Qop exp, -Qor exp),Wout)))
   } simPublic()
 
-  val lcore = new ConvCore(Chin,Chout,ChoutDivHard,stride,padding,WeightFile,WeightConfig,Win,Hin,Qip,Qir,Qop,Qor,layer,highFreq,conv)
+  val lcore = new ConvCore(Chin,Chout,kernel_size,ChoutDivHard,stride,padding,WeightFile,WeightConfig,Win,Hin,Qip,Qir,Qop,Qor,layer,highFreq,conv)
   lcore.io.valid_in := io.input.valid
   lcore.io.data_in  := io.input.payload
 

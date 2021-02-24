@@ -6,6 +6,7 @@ import spinal.core.sim._
 class ConvCore(
   Chin  : Int,
   Chout : Int,
+  kernel_size : Int,
   ChoutDivHard : Int,
   stride : Int,
   padding : Int,
@@ -22,8 +23,8 @@ class ConvCore(
   conv       : Boolean = false
 ) extends Component {
 
-  val Wout = (Win + 2 * padding - 3) / stride + 1
-  val Hout = (Hin + 2 * padding - 3) / stride + 1
+  val Wout = (Win + 2 * padding - kernel_size) / stride + 1
+  val Hout = (Hin + 2 * padding - kernel_size) / stride + 1
   val io = new Bundle {
     val valid_in = in Bool
     val data_in  = in Vec(SFix(Qip exp, -Qir exp),Win)
@@ -60,7 +61,7 @@ class ConvCore(
   }
 
   //ctrl
-  val ctrl = new ConvCtrl(Chin = Chin, ChoutDivHard = ChoutDivHard, high = Hout, Hin = Hin, stride = stride, padding = padding)
+  val ctrl = new ConvCtrl(Chin = Chin, kernel_size, ChoutDivHard = ChoutDivHard, high = Hout, Hin = Hin, stride = stride, padding = padding)
   ctrl.io.start := start
 
   //feature map
@@ -89,7 +90,7 @@ class ConvCore(
   val wList = LoadWeight(WeightFile,WeightConfig)
   val w = wList(layer)
   val Qwp : Int = log2Up(w.map(x => scala.math.abs(x)).max.toInt+1)
-  val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 8,8).max
+  val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 10,10).max
   val wrom = new Wrom(w, Chout = Chout, ChoutDivHard = ChoutDivHard)
   wrom.io.addr := Delay(ctrl.io.waddr,1)
 

@@ -3,7 +3,7 @@ import spinal.lib._
 
 object MultiCnt {
   def BeforeEnd(cnt : List[UInt], inp : List[Int]): Bool = {
-    val num = inp.zipWithIndex.map{case (value,idx) => if(value > 1) (value,idx) else null}//num = (inp != 1)
+    val num = inp.zipWithIndex.map{case (value,idx) => if(value > 1) (value,idx) else null}.filter(_ != null)//num = (inp != 1)
     val ret = Reg(Bool)
     ret := num.zipWithIndex.map{case ((value1,value2),idx) => cnt(value2) === value1 - (if(idx == 0) 2 else 1)}.reduce(_ && _)
     ret

@@ -6,20 +6,20 @@ import spinal.core.sim._
 import java.io._
 
 object ResNetSim {
-  //val writer = new PrintWriter(new File("HardSave\\c2.txt" ))
+  val writer = new PrintWriter(new File("HardSave\\res3.txt" ))
   def main(args : Array[String]) {
     val (mat,label) = LoadCifar10()
     var oCnt = 0
     var successCnt = 0
     var delay = 864 * 200
-    SimConfig.withWave.doSim(new ResNet()){dut =>//
+    SimConfig.doSim(new ResNet()){dut =>//.withWave
       //Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
-      for(idx <- 0 until 40000) {
+      for(idx <- 0 until 500000) {
         if(idx%delay > 2 && idx%delay <= 2+4*32*3) {
           dut.io.inp.valid #= true
           for(i <- 0 until 8) {
-            dut.io.inp.payload(i) #= (mat(idx/delay)((idx%delay - 3)%12/4)((idx%delay - 3)/12)(i+8*((idx%delay - 3)%4))*256).toInt
+            dut.io.inp.payload(i) #= (mat(idx/delay)((idx%delay - 3)%12/4)((idx%delay - 3)/12)(i+8*((idx%delay - 3)%4))*512).toInt
           }
         }else {
           dut.io.inp.valid #= false
@@ -30,15 +30,15 @@ object ResNetSim {
 
         dut.clockDomain.waitRisingEdge()
 
-        //if(dut.conv1.fm.valid.toBoolean) {
-        //  for(i <- 0 until 32) {
-        //    //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
-        //    writer.write(dut.plotr1(i).toInt.toDouble / 1024 + ",")
-        //    //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
-        //  }
-        //  writer.write("\n")
-        //  //println()
-        //}
+        if(dut.res3.fm.valid.toBoolean) {
+          for(i <- 0 until 8) {
+            //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
+            writer.write(dut.plot(i).toInt.toDouble / 1024 + ",")
+            //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
+          }
+          writer.write("\n")
+          //println()
+        }
         if(dut.io.oup.valid.toBoolean == true) {
           //print(dut.io.output.payload.toLong + ",")
           //print(label(oCnt))

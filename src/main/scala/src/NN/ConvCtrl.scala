@@ -3,6 +3,7 @@ import spinal.lib._
 
 class ConvCtrl(
   Chin : Int,
+  kernel_size : Int,
   ChoutDivHard : Int,
   high    : Int,
   Hin     : Int,
@@ -12,7 +13,7 @@ class ConvCtrl(
   val io = new Bundle {
     val start = in Bool
     val faddr = out UInt(log2Up((Hin+2*padding) * Chin) bits)
-    val waddr = out UInt(log2Up(Chin * 9 * ChoutDivHard) bits)
+    val waddr = out UInt(log2Up(Chin * kernel_size * kernel_size * ChoutDivHard) bits)
     val clear = out Bool
     val shift = out Bool
     val valid = out Bool
@@ -23,7 +24,7 @@ class ConvCtrl(
   //val cnt2 = Reg(UInt(2 bits)) init(0)
   //val cntC = Reg(UInt(log2Up(ChoutDivHard) bits)) init(0)
   //val cntH = Reg(UInt(log2Up(high) bits)) init(0)
-  val List(cnt1,cntChin,cnt2,cntC,cntH) = MultiCnt(io.start,List(3,Chin,3,ChoutDivHard,high))
+  val List(cnt1,cntChin,cnt2,cntC,cntH) = MultiCnt(io.start,List(kernel_size,Chin,kernel_size,ChoutDivHard,high))
 
   //val beforeEnd = Reg(Bool)
   //beforeEnd := (cnt1 === 1) && (cntChin === Chin - 1) && (cnt2 === 2) && (cntH === high - 1) && (cntC === ChoutDivHard - 1)
@@ -83,12 +84,12 @@ class ConvCtrl(
     faddr := cntChin + (cnt2 * Chin)(log2Up(Hin * Chin) - 1 downto 0)
   }//TODO
 
-  val waddr = Reg(UInt(log2Up(Chin * 9 * ChoutDivHard) bits)) init(0)
+  val waddr = Reg(UInt(log2Up(Chin * kernel_size * kernel_size * ChoutDivHard) bits)) init(0)
   if(ChoutDivHard > 1) {
-    waddr := (cntC * 9 * Chin)(log2Up(Chin * 9 * ChoutDivHard) - 1 downto 0) + cntChin * 9 + cnt2 * 3 + cnt1
+    waddr := (cntC * kernel_size * kernel_size * Chin)(log2Up(Chin * kernel_size * kernel_size * ChoutDivHard) - 1 downto 0) + cntChin * kernel_size * kernel_size + cnt2 * kernel_size + cnt1
     //waddr := (cntChin * 9 * ChoutDivHard)(log2Up(Chin * 9 * ChoutDivHard) - 1 downto 0) + cntC * 9 + cnt2 * 3 + cnt1
   }else {
-    waddr := cntChin * 9 + cnt2 * 3 + cnt1
+    waddr := cntChin * kernel_size * kernel_size + cnt2 * kernel_size + cnt1
   }
 
   val clear = Reg(Bool) init(False)
@@ -106,7 +107,7 @@ class ConvCtrl(
   }
 
   val valid = Reg(Bool) init(False)
-  valid := cnt1 === 2 && cnt2 === 2 && cntChin === Chin - 1
+  valid := cnt1 === kernel_size - 1 && cnt2 === kernel_size - 1 && cntChin === Chin - 1
 
   io.faddr := faddr
   io.waddr := waddr
