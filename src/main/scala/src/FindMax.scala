@@ -2,13 +2,14 @@ import spinal.core._
 import spinal.lib._
 
 object FindMax {
-  def apply(inp : Flow[Vec[SInt]]): Flow[UInt] = {
-    val Q = inp.payload(0).getWidth
+  def apply(inp : Flow[Vec[SFix]]): Flow[UInt] = {
+    val Q = inp.payload(0).asBits.getWidth
     val ret = Reg(UInt(log2Up(10) bits)) init(0)
     ret.setWeakName("ret")
     val cnt = Reg(UInt(log2Up(10) bits)) init(0)
     cnt.setWeakName("cnt")
-    val max = Reg(SInt(Q bits)) init((1 << (Q - 1))-1)
+    val max = Reg(cloneOf(inp.payload(0)))
+    max.raw.init((1 << (Q - 1))-1)
     max.setWeakName("max")
     when(inp.valid) {
       cnt := cnt + 1
@@ -16,13 +17,13 @@ object FindMax {
       cnt := 0
     }
     when(inp.valid) {
-      when(inp.payload(0) < max) {
-        max := inp.payload(0)
+      when(inp.payload(0) > max) {
+        max.raw := inp.payload(0).raw
         ret := cnt
       }
     }.otherwise {
       ret := 0
-      max := (1 << (Q - 1))-1
+      max.raw := (1 << (Q - 1))-1
     }
     //val valid = Reg(Bool) init(False)
     //valid.setWeakName("valid")

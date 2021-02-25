@@ -2,7 +2,7 @@ import spinal.core._
 import spinal.lib._
 
 object BatchNorm {
-  def apply(inp : FM): FM = {
+  def apply(inp : FM, Qop : Int, Qor : Int): FM = {
     println("Layer"+inp.Layer+":BN("+inp.Channel+")")
     val weight = LoadWeight(inp.WeightFile,inp.WeightConfig)(inp.Layer)
     val w = (0 until inp.Channel).map(x => weight(x)).toList
@@ -11,9 +11,9 @@ object BatchNorm {
     val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 12,12).max
     val Qbp : Int = log2Up(b.map(x => scala.math.abs(x)).max.toInt+1)
     val Qbr : Int = Array(log2Up((1/b.map(x => scala.math.abs(x)).max).toInt) + 12,12).max
-    val bn = new BatchNorm(inp.Qp, inp.Qr, inp.W, Qwp, Qwr, Qbp, Qbr, inp.Channel, w, b)//TODO:Qr
+    val bn = new BatchNorm(inp.Qp, inp.Qr, Qop, Qor, inp.W, Qwp, Qwr, Qbp, Qbr, inp.Channel, w, b)//TODO:Qr
     bn.io.inp := inp.fm
-    val ret = FM(inp,1)
+    val ret = FM(Qop, Qor, inp.W, inp.H, inp.Channel, inp.Layer+1, inp.WeightFile, inp.WeightConfig)
     ret.fm := bn.io.oup
     ret
   }
@@ -22,6 +22,8 @@ object BatchNorm {
 class BatchNorm(
   Qp : Int,
   Qr : Int,
+  Qop: Int,
+  Qor : Int,
   W : Int,
   Qw1p : Int,
   Qw1r : Int,
@@ -33,7 +35,7 @@ class BatchNorm(
 ) extends Component {
   val io = new Bundle {
     val inp = in (Flow(Vec(SFix(Qp exp, -Qr exp),W)))
-    val oup = out (Flow(Vec(SFix(Qp exp, -Qr exp),W)))
+    val oup = out (Flow(Vec(SFix(Qop exp, -Qor exp),W)))
   }
 
   val weight = Reg(Vec(SFix(Qw1p exp, -Qw1r exp),Ch))
@@ -48,7 +50,7 @@ class BatchNorm(
       bias(i) := bias(i+1)
     }
   }
-  val oup = Vec(Reg(SFix(Qp exp, -Qr exp)) init(0),W)
+  val oup = Vec(Reg(SFix(Qop exp, -Qor exp)) init(0),W)
   for(i <- 0 until W) {
     oup(i) := (Delay((weight(0) * io.inp.payload(i)).setWeakName("Mult"),1) + Delay(bias(0),1)).truncated
   }

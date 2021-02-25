@@ -10,6 +10,7 @@ class ConvCore(
   ChoutDivHard : Int,
   stride : Int,
   padding : Int,
+  group : Int = 1,
   WeightFile : String,
   WeightConfig : List[List[Int]],
   Win        : Int,
@@ -61,7 +62,7 @@ class ConvCore(
   }
 
   //ctrl
-  val ctrl = new ConvCtrl(Chin = Chin, kernel_size, ChoutDivHard = ChoutDivHard, high = Hout, Hin = Hin, stride = stride, padding = padding)
+  val ctrl = new ConvCtrl(Chin = Chin, kernel_size, ChoutDivHard = ChoutDivHard, high = Hout, Hin = Hin, stride = stride, padding = padding, group = group)
   ctrl.io.start := start
 
   //feature map
@@ -91,16 +92,18 @@ class ConvCore(
   val w = wList(layer)
   val Qwp : Int = log2Up(w.map(x => scala.math.abs(x)).max.toInt+1)
   val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 10,10).max
-  val wrom = new Wrom(w, Chout = Chout, ChoutDivHard = ChoutDivHard)
-  wrom.io.addr := Delay(ctrl.io.waddr,1)
-
   val pe = new PE(Wout = Wout, Chout = Chout / ChoutDivHard, Qwp = Qwp, Qwr = Qwr, Qfmp = Qip, Qfmr = Qir, Qop = Qop, Qor = Qor, highFreq = highFreq, mode = mode)
+  if(mode != "avgpool") {
+    val wrom = new Wrom(w, Chout = Chout, ChoutDivHard = ChoutDivHard)
+    wrom.io.addr := Delay(ctrl.io.waddr,1)
+    pe.io.W  := wrom.io.w
+  }
+
   pe.io.clear := ctrl.io.clear
   for(i <- 0 until Wout) {
     pe.io.FM(i) := peFM(i * stride)
   }
   //or to write as:  pe.io.FM := Vec()
-  pe.io.W  := wrom.io.w
 
   io.valid_out := Delay(ctrl.io.valid,4+highFreq,init = False)
   io.data_out := pe.io.oup//peOut(0)

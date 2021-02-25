@@ -15,7 +15,7 @@ object ResNetSim {
     SimConfig.doSim(new ResNet()){dut =>//.withWave
       //Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
-      for(idx <- 0 until 500000) {
+      for(idx <- 0 until 5000000) {
         if(idx%delay > 2 && idx%delay <= 2+4*32*3) {
           dut.io.inp.valid #= true
           for(i <- 0 until 8) {
@@ -30,15 +30,15 @@ object ResNetSim {
 
         dut.clockDomain.waitRisingEdge()
 
-        if(dut.res3.fm.valid.toBoolean) {
-          for(i <- 0 until 8) {
-            //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
-            writer.write(dut.plot(i).toInt.toDouble / 1024 + ",")
-            //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
-          }
-          writer.write("\n")
-          //println()
-        }
+        //if(dut.res3.fm.valid.toBoolean) {
+        //  for(i <- 0 until 8) {
+        //    //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
+        //    writer.write(dut.plot(i).toInt.toDouble / 1024 + ",")
+        //    //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
+        //  }
+        //  writer.write("\n")
+        //  //println()
+        //}
         if(dut.io.oup.valid.toBoolean == true) {
           //print(dut.io.output.payload.toLong + ",")
           //print(label(oCnt))

@@ -4,13 +4,13 @@ import spinal.sim._
 import spinal.core.sim._
 
 object conv2d {
-  def apply(inp : FM, input_channel : Int, output_channel : Int, kernel_size : Int, stride : Int = 1, padding : Int = 0, bias: Boolean = false, Qop : Int, Qor : Int, ChoutDivHard : Int): FM = {
+  def apply(inp : FM, input_channel : Int, output_channel : Int, kernel_size : Int, stride : Int = 1, padding : Int = 0, group : Int = 1, bias: Boolean = false, Qop : Int, Qor : Int, ChoutDivHard : Int): FM = {
     println("Layer"+inp.Layer+":conv2d("+input_channel+","+output_channel+","+kernel_size+","+stride+","+padding+")"+" ("+((inp.W+2*padding-kernel_size)/stride+1)+","+((inp.H+2*padding-kernel_size)/stride+1)+")")
     val Win = inp.W
     val Hin = inp.H
     val Wout = (Win+2*padding-kernel_size)/stride+1
     val Hout = (Hin+2*padding-kernel_size)/stride+1
-    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true, 0, "conv")
+    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,group,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true, 0, "conv")
     l.io.input := inp.fm
     val oup = FM(Qop,Qor,Wout,Hout,output_channel,inp.Layer+1,inp.WeightFile,inp.WeightConfig)
     oup.fm := l.io.output
@@ -19,13 +19,13 @@ object conv2d {
 }
 
 object adder2d {
-  def apply(inp : FM, input_channel : Int, output_channel : Int, kernel_size : Int, stride : Int = 1, padding : Int = 0, bias: Boolean = false, Qop : Int, Qor : Int, ChoutDivHard : Int): FM = {
+  def apply(inp : FM, input_channel : Int, output_channel : Int, kernel_size : Int, stride : Int = 1, padding : Int = 0, group : Int = 1, bias: Boolean = false, Qop : Int, Qor : Int, ChoutDivHard : Int): FM = {
     println("Layer"+inp.Layer+":adder2d("+input_channel+","+output_channel+","+kernel_size+","+stride+","+padding+")"+" ("+((inp.W+2*padding-kernel_size)/stride+1)+","+((inp.H+2*padding-kernel_size)/stride+1)+")")
     val Win = inp.W
     val Hin = inp.H
     val Wout = (Win+2*padding-kernel_size)/stride+1
     val Hout = (Hin+2*padding-kernel_size)/stride+1
-    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true)
+    val l = new Conv(input_channel,output_channel,kernel_size,stride,padding,group,inp.WeightFile,inp.WeightConfig,Win = inp.W, Hin = inp.H, Qip = inp.Qp, Qir = inp.Qr, Qop = Qop, Qor = Qor, layer = inp.Layer, SubNum = 0, DivNum = 0, ChoutDivHard = ChoutDivHard, noReLu = true)
     l.io.input := inp.fm
     val oup = FM(Qop,Qor,Wout,Hout,output_channel,inp.Layer+1,inp.WeightFile,inp.WeightConfig)
     oup.fm := l.io.output
@@ -39,6 +39,7 @@ class Conv(
   kernel_size : Int,
   stride : Int,
   padding : Int,
+  group : Int = 1,
   WeightFile : String,
   WeightConfig : List[List[Int]],
   Win        : Int,
@@ -64,16 +65,16 @@ class Conv(
     val output = out (Flow(Vec(SFix(Qop exp, -Qor exp),Wout)))
   } simPublic()
 
-  val lcore = new ConvCore(Chin,Chout,kernel_size,ChoutDivHard,stride,padding,WeightFile,WeightConfig,Win,Hin,Qip,Qir,Qop,Qor,layer,highFreq,mode)
+  val lcore = new ConvCore(Chin,Chout / group,kernel_size,ChoutDivHard,stride,padding,group = group,WeightFile,WeightConfig,Win,Hin,Qip,Qir,Qop,Qor,layer,highFreq,mode)
   lcore.io.valid_in := io.input.valid
   lcore.io.data_in  := io.input.payload
 
   val lcOut = Flow(Vec(SFix(Qop exp, -Qor exp),Wout))
-  val lOut = Vec(Vec(Reg(SFix(Qop exp, -Qor exp)) init(0),Wout),Chout / ChoutDivHard)
+  val lOut = Vec(Vec(Reg(SFix(Qop exp, -Qor exp)) init(0),Wout),Chout / group / ChoutDivHard)
   when(lcore.io.valid_out) {
     lOut := lcore.io.data_out
   }.otherwise {
-    for(i <- 0 until Chout / ChoutDivHard - 1) {
+    for(i <- 0 until Chout / group / ChoutDivHard - 1) {
       lOut(i) := lOut(i+1)
     }
   }
@@ -81,7 +82,7 @@ class Conv(
   val lcOutValid = Reg(Bool) init(False)
   when(lcore.io.valid_out) {
     lcOutValid := True
-  }.elsewhen(Delay(lcore.io.valid_out,Chout / ChoutDivHard)) {
+  }.elsewhen(Delay(lcore.io.valid_out,Chout / group / ChoutDivHard)) {
     lcOutValid := False
   }
   lcOut.valid   := lcOutValid
