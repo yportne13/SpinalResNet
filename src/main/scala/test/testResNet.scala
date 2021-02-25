@@ -6,7 +6,11 @@ import spinal.core.sim._
 import java.io._
 
 object ResNetSim {
-  val writer = new PrintWriter(new File("HardSave\\res3.txt" ))
+  val writer1 = new PrintWriter(new File("HardSave\\res1.txt" ))
+  val writer2 = new PrintWriter(new File("HardSave\\res2.txt" ))
+  val writer3 = new PrintWriter(new File("HardSave\\res3.txt" ))
+  val writerp = new PrintWriter(new File("HardSave\\pool.txt" ))
+  val writero = new PrintWriter(new File("HardSave\\out.txt" ))
   def main(args : Array[String]) {
     val (mat,label) = LoadCifar10()
     var oCnt = 0
@@ -15,11 +19,11 @@ object ResNetSim {
     SimConfig.doSim(new ResNet()){dut =>//.withWave
       //Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
-      for(idx <- 0 until 5000000) {
+      for(idx <- 0 until 800000) {
         if(idx%delay > 2 && idx%delay <= 2+4*32*3) {
           dut.io.inp.valid #= true
           for(i <- 0 until 8) {
-            dut.io.inp.payload(i) #= (mat(idx/delay)((idx%delay - 3)%12/4)((idx%delay - 3)/12)(i+8*((idx%delay - 3)%4))*512).toInt
+            dut.io.inp.payload(i) #= (mat(idx/delay)((idx%delay - 3)%12/4)((idx%delay - 3)/12)(i+8*((idx%delay - 3)%4))*1024).toInt
           }
         }else {
           dut.io.inp.valid #= false
@@ -30,15 +34,45 @@ object ResNetSim {
 
         dut.clockDomain.waitRisingEdge()
 
-        //if(dut.res3.fm.valid.toBoolean) {
-        //  for(i <- 0 until 8) {
-        //    //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
-        //    writer.write(dut.plot(i).toInt.toDouble / 1024 + ",")
-        //    //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
-        //  }
-        //  writer.write("\n")
-        //  //println()
-        //}
+        if(dut.res1.fm.valid.toBoolean) {
+          for(i <- 0 until 32) {
+            writer1.write(dut.plot1(i).toInt.toDouble / 1024  /16 + ",")
+          }
+          writer1.write("\n")
+        }
+        if(dut.res2.fm.valid.toBoolean) {
+          for(i <- 0 until 16) {
+            writer2.write(dut.plot2(i).toInt.toDouble / 1024 / 16 + ",")
+          }
+          writer2.write("\n")
+        }
+        if(dut.res3.fm.valid.toBoolean) {
+          for(i <- 0 until 8) {
+            //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
+            writer3.write(dut.plot3(i).toInt.toDouble / 1024 / 16 + ",")
+            //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
+          }
+          writer3.write("\n")
+          //println()
+        }
+        if(dut.pool.fm.valid.toBoolean) {
+          for(i <- 0 until 1) {
+            //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
+            writerp.write(dut.plotp(i).toInt.toDouble / 1024 + ",")
+            //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
+          }
+          writerp.write("\n")
+          //println()
+        }
+        if(dut.bn.fm.valid.toBoolean) {
+          for(i <- 0 until 1) {
+            //print(dut.plotr1(i).toInt.toDouble / 1024 + ",")
+            writero.write(dut.ploto(i).toInt.toDouble / 1024 / 16 + ",")
+            //print(dut.inp.fm.payload(i) + ",")//.asBits.toInt.toDouble / 256
+          }
+          writero.write("\n")
+          //println()
+        }
         if(dut.io.oup.valid.toBoolean == true) {
           //print(dut.io.output.payload.toLong + ",")
           //print(label(oCnt))

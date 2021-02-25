@@ -8,9 +8,9 @@ object BatchNorm {
     val w = (0 until inp.Channel).map(x => weight(x)).toList
     val b = (0 until inp.Channel).map(x => weight(x + inp.Channel)).toList
     val Qwp : Int = log2Up(w.map(x => scala.math.abs(x)).max.toInt+1)
-    val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 12,12).max
+    val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 15,15).max
     val Qbp : Int = log2Up(b.map(x => scala.math.abs(x)).max.toInt+1)
-    val Qbr : Int = Array(log2Up((1/b.map(x => scala.math.abs(x)).max).toInt) + 12,12).max
+    val Qbr : Int = Array(log2Up((1/b.map(x => scala.math.abs(x)).max).toInt) + 15,15).max
     val bn = new BatchNorm(inp.Qp, inp.Qr, Qop, Qor, inp.W, Qwp, Qwr, Qbp, Qbr, inp.Channel, w, b)//TODO:Qr
     bn.io.inp := inp.fm
     val ret = FM(Qop, Qor, inp.W, inp.H, inp.Channel, inp.Layer+1, inp.WeightFile, inp.WeightConfig)
