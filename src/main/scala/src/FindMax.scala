@@ -9,8 +9,8 @@ object FindMax {
     val cnt = Reg(UInt(log2Up(10) bits)) init(0)
     cnt.setWeakName("cnt")
     val max = Reg(cloneOf(inp.payload(0)))
-    max.raw.init((1 << (Q - 1))-1)
-    max.setWeakName("max")
+    max.raw.init(-(1 << (Q-1)))
+    max.setName("max_channel")
     when(inp.valid) {
       cnt := cnt + 1
     }.otherwise {
@@ -23,7 +23,7 @@ object FindMax {
       }
     }.otherwise {
       ret := 0
-      max.raw := (1 << (Q - 1))-1
+      max.raw := -(1 << (Q - 1))
     }
     //val valid = Reg(Bool) init(False)
     //valid.setWeakName("valid")

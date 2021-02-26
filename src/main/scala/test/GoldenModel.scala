@@ -79,17 +79,17 @@ case class resnet20() extends Net {
 
 object GoldenResNet {
   def saveFM(inp : Array[Array[Array[Double]]], fileName : String) = {
-    //val writer = new PrintWriter(new File("saveFM\\"+fileName+".txt" ))
-    //for(j <- 0 until inp(0).length) {
-    //  for(i <- 0 until inp.length) {
-    //    for(k <- 0 until inp(0)(0).length) {
-    //      writer.write(inp(i)(j)(k)+",")
-    //    }
-    //    writer.write("\n")
-    //  }
-    //  writer.write("\n\n")
-    //}
-    //writer.close()
+    val writer = new PrintWriter(new File("saveFM\\"+fileName+".txt" ))
+    for(j <- 0 until inp(0).length) {
+      for(i <- 0 until inp.length) {
+        for(k <- 0 until inp(0)(0).length) {
+          writer.write(inp(i)(j)(k)+",")
+        }
+        writer.write("\n")
+      }
+      writer.write("\n\n")
+    }
+    writer.close()
   }
   def printFM(inp : Array[Array[Double]]) = {
     for(i <- 0 until inp.length) {
@@ -140,7 +140,7 @@ object GoldenResNet {
 
     var suc = 0
     var div = 1024
-    for(i <- 0 until 1000) {
+    for(i <- 0 until 1) {
       var l1 = Golden.conv2d(mat(i),3,16,3,wList(0),1,1)
       var b1 = Golden.BatchNorm(l1,wList(1))
       var r1 = Golden.relu(b1)
@@ -155,6 +155,8 @@ object GoldenResNet {
       val pool = Golden.AvgPool(res3,8,1)
       val fc   = Golden.conv2d(pool,64,10,1,wList(42),stride = 1, padding = 0)
       val bn   = Golden.BatchNorm(fc,wList(43))
+      saveFM(pool,"pool")
+      saveFM(bn,"bn")
 
       //println("weight:"+wList.length)
       //println("res1:"+res1.length+";"+res1(0).length+";"+res1(0)(0).length)

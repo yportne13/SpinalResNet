@@ -42,7 +42,7 @@ class ResNet extends Component {
   val res3 = makeLayer(res2,64,stride = 2, ChoutDivHard = 4) simPublic()
   val pool = AvgPool(res3, 8, stride = 1, padding = 0, Qop = 10, Qor = 10) simPublic()
   val fc   = conv2d(pool, 64, 10, 1, stride = 1, padding = 0, group = 1, bias = false, Qop = 10, Qor = 10, ChoutDivHard = 1)
-  val bn   = BatchNorm(fc,3,14) simPublic()
+  val bn   = BatchNorm(fc,5,14) simPublic()
 
   val plot1 = Vec(res1.fm.payload.map(x => x.asBits).toList) simPublic
   val plot2 = Vec(res2.fm.payload.map(x => x.asBits).toList) simPublic
