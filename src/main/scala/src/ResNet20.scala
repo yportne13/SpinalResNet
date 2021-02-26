@@ -52,3 +52,10 @@ class ResNet extends Component {
 
   io.oup := FindMax(bn.fm)//FindMax(bn.fm)
 }
+
+object ResNet20Top {
+  def main(args : Array[String]) {
+    SpinalVhdl(new ResNet)
+    SpinalVerilog(new ResNet)
+  }
+}
