@@ -33,16 +33,16 @@ class ResNet extends Component {
   inp.fm.valid := Delay(cnt === 3,1,init = False)
   inp.fm.payload := l1in
 
-  val l1 = conv2d(inp,3,16,3,1,1,1,false,15,10,ChoutDivHard = 16) simPublic()
-  val b1 = BatchNorm(l1,3,14)
+  val l1 = conv2d(inp,3,16,3,1,1,1,false,2,8,ChoutDivHard = 16) simPublic()
+  val b1 = BatchNorm(l1,2,5)
   val r1 = ReLu(b1) simPublic()
 
   val res1 = makeLayer(r1, 16, ChoutDivHard = 4) simPublic()
   val res2 = makeLayer(res1,32,stride = 2, ChoutDivHard = 4) simPublic()
   val res3 = makeLayer(res2,64,stride = 2, ChoutDivHard = 4) simPublic()
-  val pool = AvgPool(res3, 8, stride = 1, padding = 0, Qop = 10, Qor = 10) simPublic()
-  val fc   = conv2d(pool, 64, 10, 1, stride = 1, padding = 0, group = 1, bias = false, Qop = 10, Qor = 10, ChoutDivHard = 1)
-  val bn   = BatchNorm(fc,5,14) simPublic()
+  val pool = AvgPool(res3, 8, stride = 1, padding = 0, Qop = 5, Qor = 10) simPublic()
+  val fc   = conv2d(pool, 64, 10, 1, stride = 1, padding = 0, group = 1, bias = false, Qop = -2, Qor = 9, ChoutDivHard = 1)
+  val bn   = BatchNorm(fc,4,3) simPublic()
 
   val plot1 = Vec(res1.fm.payload.map(x => x.asBits).toList) simPublic
   val plot2 = Vec(res2.fm.payload.map(x => x.asBits).toList) simPublic

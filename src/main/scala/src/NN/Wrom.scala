@@ -3,12 +3,11 @@ import spinal.lib._
 
 class Wrom(
   w : Array[Double],
+  Qwp : Int,
+  Qwr : Int,
   Chout : Int,
   ChoutDivHard : Int
 ) extends Component {
-
-  val Qwp : Int = log2Up(w.map(x => scala.math.abs(x)).max.toInt+1)
-  val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 10,10).max
 
   var romDepth = 0
   romDepth = w.length / Chout

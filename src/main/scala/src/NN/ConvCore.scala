@@ -91,10 +91,10 @@ class ConvCore(
   val wList = LoadWeight(WeightFile,WeightConfig)
   val w = wList(layer)
   val Qwp : Int = log2Up(w.map(x => scala.math.abs(x)).max.toInt+1)
-  val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + 10,10).max
+  val Qwr : Int = Array(log2Up((1/w.map(x => scala.math.abs(x)).max).toInt) + Qor,Qor).max
   val pe = new PE(Wout = Wout, Chout = Chout / ChoutDivHard, Qwp = Qwp, Qwr = Qwr, Qfmp = Qip, Qfmr = Qir, Qop = Qop, Qor = Qor, highFreq = highFreq, mode = mode)
   if(mode != "avgpool") {
-    val wrom = new Wrom(w, Chout = Chout, ChoutDivHard = ChoutDivHard)
+    val wrom = new Wrom(w, Qwp, Qwr, Chout = Chout, ChoutDivHard = ChoutDivHard)
     wrom.io.addr := Delay(ctrl.io.waddr,1)
     pe.io.W  := wrom.io.w
   }

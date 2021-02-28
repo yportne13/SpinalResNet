@@ -78,18 +78,24 @@ case class resnet20() extends Net {
 }
 
 object GoldenResNet {
+  def absmax(inp : Array[Array[Array[Double]]]) = {
+    //println("max:"+inp.map(_.map(_.map(scala.math.abs(_)).max).max).max)
+  }
+  def Quanti(inp : Array[Array[Array[Double]]], Qp : Int, Qr : Int): Array[Array[Array[Double]]] = {
+    inp.map(_.map(_.map(x => ((x*(1 << Qr)).toInt.toDouble/(1 << Qr)) ).toArray).toArray).toArray//TODO:Qp not use
+  }
   def saveFM(inp : Array[Array[Array[Double]]], fileName : String) = {
-    val writer = new PrintWriter(new File("saveFM\\"+fileName+".txt" ))
-    for(j <- 0 until inp(0).length) {
-      for(i <- 0 until inp.length) {
-        for(k <- 0 until inp(0)(0).length) {
-          writer.write(inp(i)(j)(k)+",")
-        }
-        writer.write("\n")
-      }
-      writer.write("\n\n")
-    }
-    writer.close()
+    //val writer = new PrintWriter(new File("saveFM\\"+fileName+".txt" ))
+    //for(j <- 0 until inp(0).length) {
+    //  for(i <- 0 until inp.length) {
+    //    for(k <- 0 until inp(0)(0).length) {
+    //      writer.write(inp(i)(j)(k)+",")
+    //    }
+    //    writer.write("\n")
+    //  }
+    //  writer.write("\n\n")
+    //}
+    //writer.close()
   }
   def printFM(inp : Array[Array[Double]]) = {
     for(i <- 0 until inp.length) {
@@ -101,22 +107,29 @@ object GoldenResNet {
   }
   def BasicBlock(inp : Array[Array[Array[Double]]], inplanes : Int, planes : Int, weight : List[Array[Double]], stride : Int = 1, downsample : Int = 0): Array[Array[Array[Double]]]= {
     var residual = inp
-    val conv1 = Golden.adder2d(inp, inplanes, planes, 3, weight(0), stride = stride)
+    val conv1 = Golden.adder2d(inp, inplanes, planes, 3, weight(0).map(x => scala.math.round(x*(1 << 5)).toInt.toDouble/32).toArray, stride = stride)
     val bn1 = Golden.BatchNorm(conv1,weight(1))
-    val r1 = Golden.relu(bn1)
-    val conv2 = Golden.adder2d(r1, planes, planes, 3, weight(2))
+    var r1 = Golden.relu(bn1)
+    r1 = Quanti(r1,10,5)
+    val conv2 = Golden.adder2d(r1, planes, planes, 3, weight(2).map(x => scala.math.round(x*(1 << 5)).toInt.toDouble/32).toArray)
     val bn2 = Golden.BatchNorm(conv2,weight(3))
     if(downsample == 1) {
-      val convr = Golden.adder2d(inp, inplanes, planes, 1, weight(4), stride = stride, padding = 0)
+      val convr = Golden.adder2d(inp, inplanes, planes, 1, weight(4).map(x => scala.math.round(x*(1 << 5)).toInt.toDouble/32).toArray, stride = stride, padding = 0)
       residual = Golden.BatchNorm(convr,weight(5))
     }
+    absmax(conv1)
+    absmax(bn1)
+    absmax(conv2)
+    absmax(bn2)
     if(inp(0)(0)(0) == 0.02147562182031093) {
-      print("bs1b2")
+      saveFM(conv1,"bs1c1")
+      saveFM(conv2,"bs1c2")
       saveFM(bn2,"bs1b2")
     }
     //printFM(bn1(0))
     val resAdd = bn2.zipWithIndex.map{case (value1,idx1) => value1.zipWithIndex.map{case (value2,idx2) => value2.zipWithIndex.map{case (value3,idx3) => value3 + residual(idx1)(idx2)(idx3)}}}
-    val r2 = Golden.relu(resAdd)
+    var r2 = Golden.relu(resAdd)
+    r2 = Quanti(r2,10,5)
     r2
   }
   def makeLayer(inp : Array[Array[Array[Double]]], planes : Int, weight : List[Array[Double]], stride : Int = 1): Array[Array[Array[Double]]] = {
@@ -140,17 +153,23 @@ object GoldenResNet {
 
     var suc = 0
     var div = 1024
-    for(i <- 0 until 1) {
+    for(i <- 0 until 100) {
       var l1 = Golden.conv2d(mat(i),3,16,3,wList(0),1,1)
       var b1 = Golden.BatchNorm(l1,wList(1))
       var r1 = Golden.relu(b1)
 
+      r1 = Quanti(r1,10,5)
+
+      saveFM(l1,"l1")
       saveFM(r1,"r1")
       var res1 = makeLayer(r1,16,(2 until 14).map(x => wList(x)).toList)
       saveFM(res1,"res1")
+      res1 = Quanti(res1,10,5)
       //printFM(res1(0))
-      val res2 = makeLayer(res1,32,(14 until 28).map(x => wList(x)).toList,stride = 2)
-      val res3 = makeLayer(res2,64,(28 until 42).map(x => wList(x)).toList,stride = 2)
+      var res2 = makeLayer(res1,32,(14 until 28).map(x => wList(x)).toList,stride = 2)
+      res2 = Quanti(res2,10,5)
+      var res3 = makeLayer(res2,64,(28 until 42).map(x => wList(x)).toList,stride = 2)
+      res3 = Quanti(res3,10,5)
       saveFM(res2,"res2")
       val pool = Golden.AvgPool(res3,8,1)
       val fc   = Golden.conv2d(pool,64,10,1,wList(42),stride = 1, padding = 0)
@@ -194,6 +213,9 @@ object GoldenResNet {
       //println(index + "," + label(i))
       if(index == label(i)) {
         suc = suc + 1
+      }
+      if(i%10 == 9) {
+        println(suc+";"+(i+1))
       }
     }
     println(suc)

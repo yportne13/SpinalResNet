@@ -19,7 +19,7 @@ object ResNetSim {
     SimConfig.doSim(new ResNet()){dut =>//.withWave
       //Fork a process to generate the reset and the clock on the dut
       dut.clockDomain.forkStimulus(period = 10)
-      for(idx <- 0 until 7000000) {
+      for(idx <- 0 until 50000000) {
         if(idx%delay > 2 && idx%delay <= 2+4*32*3) {
           dut.io.inp.valid #= true
           for(i <- 0 until 8) {
